@@ -27,7 +27,9 @@ import random
 from models.util import wandb_logger
 import csv
 from braindecode.models import EEGNetv4, ATCNet, EEGConformer, EEGITNet, ShallowFBCSPNet
+from torch import Tensor
 import argparse
+import datetime
 
 
 
@@ -122,7 +124,6 @@ class NICE(nn.Module):
 class EEGNetv4_Encoder(nn.Module):
     def __init__(self):
         super().__init__()
-        self.device = device
         self.shape = (63, 250)
         self.eegnet = EEGNetv4(
             in_chans=self.shape[0],
@@ -152,7 +153,6 @@ class EEGNetv4_Encoder(nn.Module):
 class EEGConformer_Encoder(nn.Module):
     def __init__(self):
         super().__init__()
-        self.device = device
         self.shape = (63, 250)
         self.eegConformer = EEGConformer(n_outputs=None, 
                                    n_chans=self.shape[0], 
@@ -187,7 +187,6 @@ class EEGConformer_Encoder(nn.Module):
 class EEGITNet_Encoder(nn.Module):
     def __init__(self):
         super().__init__()
-        self.device = device
         self.shape = (63, 250)
         self.eegEEGITNet = EEGITNet(n_outputs=1024, 
                                   n_chans=self.shape[0], 
@@ -286,7 +285,6 @@ class Projector(nn.Module):
 class ShallowFBCSPNet_Encoder(nn.Module):
     def __init__(self):
         super().__init__()
-        self.device = device
         self.shape = (63, 250)
         self.ShallowFBCSPNet = ShallowFBCSPNet(n_chans=self.shape[0],
                                          n_outputs=1024,
@@ -318,7 +316,6 @@ class ShallowFBCSPNet_Encoder(nn.Module):
 class ATCNet_Encoder(nn.Module):
     def __init__(self):
         super().__init__()
-        self.device = device
         self.shape = (63, 250)
         self.eegATCNet = ATCNet(n_chans=self.shape[0], 
                                 n_outputs=1024,
@@ -782,8 +779,14 @@ def main():
     subjects = ['sub-01', 'sub-02', 'sub-03', 'sub-04', 'sub-05', 'sub-06', 'sub-07', 'sub-08', 'sub-09', 'sub-10']
 
     for sub in subjects:
-        # Re-initialize the model for each subject
-        model = globals()[args.encoder_type]((63, 250))
+        # Re-initialize the model for each subject.
+        model_cls = globals()[args.encoder_type]
+        if args.encoder_type == 'Projector':
+            model = model_cls((63, 250))
+        elif args.encoder_type == 'MetaEEG':
+            model = model_cls(63, 250)
+        else:
+            model = model_cls()
         model.to(device)
         optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr)
 

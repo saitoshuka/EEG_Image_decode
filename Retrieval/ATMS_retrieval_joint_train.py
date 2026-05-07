@@ -355,11 +355,13 @@ def evaluate_model(sub, eeg_model, dataloader, device, text_features_all, img_fe
     top5_acc = top5_correct_count / total
     return average_loss, accuracy, top5_acc
 
-def main_train_loop(sub, current_time, eeg_model, train_dataloader, test_dataloader, optimizer, device, 
-                    text_features_train_all, text_features_test_all, img_features_train_all, img_features_test_all, config, logger=None):    
-    if logger is not None:
+def main_train_loop(sub, current_time, eeg_model, train_dataloader, test_dataloader, optimizer, device,
+                    text_features_train_all, text_features_test_all, img_features_train_all, img_features_test_all, config, logger=None):
+    if logger:
         logger = wandb_logger(config)  # Initialize logger only if it's enabled
         logger.watch(eeg_model, logger)
+    else:
+        logger = None
 
     train_losses, train_accuracies = [], []
     test_losses, test_accuracies = [], []
@@ -434,16 +436,17 @@ def main_train_loop(sub, current_time, eeg_model, train_dataloader, test_dataloa
                 "v4_acc":v4_acc,
                 "v10_acc":v10_acc
             }
-        logger.log({
-            "Train Loss": train_loss,
-            "Train Accuracy": train_accuracy,
-            "Test Loss": test_loss,
-            "Test Accuracy": test_accuracy,
-            "v2 Accuracy": v2_acc,
-            "v4 Accuracy": v4_acc,
-            "v10 Accuracy": v10_acc,
-            "Epoch": epoch
-        })
+        if logger is not None:
+            logger.log({
+                "Train Loss": train_loss,
+                "Train Accuracy": train_accuracy,
+                "Test Loss": test_loss,
+                "Test Accuracy": test_accuracy,
+                "v2 Accuracy": v2_acc,
+                "v4 Accuracy": v4_acc,
+                "v10 Accuracy": v10_acc,
+                "Epoch": epoch
+            })
 
         print(f"Epoch {epoch + 1}/{config.epochs} - Train Loss: {train_loss:.4f}, Train Accuracy: {train_accuracy:.4f}, Test Loss: {test_loss:.4f}, Test Accuracy: {test_accuracy:.4f}, Top5 Accuracy: {top5_acc:.4f}")
         print(f"Epoch {epoch + 1}/{config.epochs} - v2 Accuracy:{v2_acc} - v4 Accuracy:{v4_acc} - v10 Accuracy:{v10_acc} - v50 Accuracy:{v50_acc} - v100 Accuracy:{v100_acc}")
@@ -503,7 +506,8 @@ def main_train_loop(sub, current_time, eeg_model, train_dataloader, test_dataloa
     # Add a main title
     plt.suptitle('pos_img_text', fontsize=16, y=1.05)
     plt.savefig('pos_img_text')
-    logger.finish()
+    if logger is not None:
+        logger.finish()
     return results
 
 import datetime
@@ -518,14 +522,17 @@ def main():
     parser.add_argument('--lr', type=float, default=3e-4, help='Learning rate')
     parser.add_argument('--epochs', type=int, default=40, help='Number of training epochs')
     parser.add_argument('--batch_size', type=int, default=16, help='Batch size for training')
-    parser.add_argument('--insubject', default=False, help='Flag to indicate within-subject training')
+    parser.add_argument('--insubject', action='store_true', help='Enable within-subject training')
+    parser.add_argument('--no-insubject', dest='insubject', action='store_false', help='Disable within-subject training')
     parser.add_argument('--encoder_type', type=str, default='ATMS', choices=['ATMS', 'EEGNetv4_Encoder', 'ATCNet_Encoder', 'EEGConformer_Encoder', 'EEGITNet_Encoder', 'ShallowFBCSPNet_Encoder'], help='Encoder type')
-    parser.add_argument('--logger', default=True, help='Enable logging')
+    parser.add_argument('--logger', dest='logger', action='store_true', help='Enable Weights & Biases logging')
+    parser.add_argument('--no-logger', dest='logger', action='store_false', help='Disable Weights & Biases logging')
     parser.add_argument('--gpu', type=str, default='cuda:0', help='GPU device to use')
     parser.add_argument('--device', type=str, choices=['cpu', 'gpu'], default='gpu', help='Device to run on (cpu or gpu)')
     parser.add_argument('--joint_train', action='store_true', help='Flag to indicate joint subject training (default: False)')
     parser.add_argument('--sub', type=str, default='sub-01', help='Subject ID to use for testing (default: sub-01)')
     parser.add_argument('--subjects', nargs='+', default=['sub-01', 'sub-02', 'sub-03', 'sub-04', 'sub-05', 'sub-06', 'sub-07', 'sub-08', 'sub-09', 'sub-10'], help='List of subject IDs (default: sub-01 to sub-10)')
+    parser.set_defaults(logger=True, insubject=False)
     args = parser.parse_args()
     
     # Set device based on the argument

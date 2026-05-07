@@ -134,3 +134,28 @@ Retrieval/wandb/
 .cache/
 tmp/
 temp/
+
+# Local notes and pasted assets
+.obsidian/
+Pasted image *.png
+1ba97406-*.png
+5fc98889-*.png
+73eea99c-*.png
+Coding Test.md
+nvidia-smi*.md
+课题Reference.md
+面试可能.md
+CS231n Deep Learning for Computer Vision/
+Post-train and Reinforcement Learning/
+brain foundation/
+EEG-fMRI/
+emotion/
+インターン/
+東京大学授業/
+
+# Local duplicate copy, not part of the upstream repository
+MEG-preprocessing/models/
+
+# Local plots generated during runs
+Generation/pos_img_text.png
+Retrieval/pos_img_text.png

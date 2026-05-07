@@ -23,15 +23,23 @@ vlmodel, preprocess_train, feature_extractor = open_clip.create_model_and_transf
 
 import json
 
+# Resolve paths relative to this file so imports are stable across cwd.
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+def _resolve_path(path_value):
+    if os.path.isabs(path_value):
+        return path_value
+    return os.path.abspath(os.path.join(BASE_DIR, path_value))
+
 # Load the configuration from the JSON file
-config_path = "data_config.json"
+config_path = os.path.join(BASE_DIR, "data_config.json")
 with open(config_path, "r") as config_file:
     config = json.load(config_file)
 
 # Access the paths from the config
-data_path = config["data_path"]
-img_directory_training = config["img_directory_training"]
-img_directory_test = config["img_directory_test"]
+data_path = _resolve_path(config["data_path"])
+img_directory_training = _resolve_path(config["img_directory_training"])
+img_directory_test = _resolve_path(config["img_directory_test"])
 
 
 class EEGDataset():
@@ -59,7 +67,7 @@ class EEGDataset():
         
         if self.classes is None and self.pictures is None:
             # Try to load the saved features if they exist
-            features_filename = os.path.join(f'{model_type}_features_train.pt') if self.train else os.path.join(f'{model_type}_features_test.pt')
+            features_filename = os.path.join(BASE_DIR, f'{model_type}_features_train.pt') if self.train else os.path.join(BASE_DIR, f'{model_type}_features_test.pt')
             
             if os.path.exists(features_filename):
                 saved_features = torch.load(features_filename)
